@@ -121,6 +121,10 @@ export class SchedulerHook {
         return;
       }
 
+      // 金曜13:00は前週までのタスク・履歴を初期化してから最新週報を同期する
+      await this.taskDb.resetTaskData();
+      console.log('Task data reset before weekly tasks sync.');
+
       for (const user of users) {
         await this.sendWeeklyTasks(user);
       }

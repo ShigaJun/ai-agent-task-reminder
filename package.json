@@ -11,6 +11,7 @@
     "job:progress-check": "node dist/index.js --job=progress-check",
     "job:weekly-tasks": "node dist/index.js --job=weekly-tasks",
     "sync-tasks": "ts-node scripts/sync-tasks.ts",
+    "reset-db": "ts-node scripts/reset-db.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

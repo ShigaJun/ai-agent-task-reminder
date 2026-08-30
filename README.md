@@ -93,8 +93,8 @@ npx ts-node -e "
 const { MarkdownParser } = require('./src/utils/markdown-parser');
 const md = \`# 来週やること（計画）
 
-- [ ] ゼミ合宿
-- [ ] まどマギの映画観に行く
+- [ ] ゼミ制作（ヘッダーを追加）
+- [ ] ゼミチームミーティング
 \`;
 console.log(JSON.stringify(MarkdownParser.extractTasks(md), null, 2));
 "

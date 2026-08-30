@@ -23,13 +23,13 @@
 {"action": "add_task", "task_id": null, "task_title": null, "new_task": "追加するタスク名", "confidence": 0.95}
 
 ### 例
-- 「まどマギ観に行く、追加して」→ {"action": "add_task", "task_id": null, "task_title": null, "new_task": "まどマギの映画を観に行く", "confidence": 0.98}
+- 「ゼミ制作、追加して」→ {"action": "add_task", "task_id": null, "task_title": null, "new_task": "ゼミ制作を進める", "confidence": 0.98}
 - 「来週、卒論の実験もやることに追加して」→ {"action": "add_task", "task_id": null, "task_title": null, "new_task": "卒論の実験", "confidence": 0.95}
 - 「タスクに研究室の掃除を追加」→ {"action": "add_task", "task_id": null, "task_title": null, "new_task": "研究室の掃除", "confidence": 0.95}
 - 「来週は発表資料作成もやる」→ {"action": "add_task", "task_id": null, "task_title": null, "new_task": "発表資料作成", "confidence": 0.92}
-- 「まどマギ観終わった！」（未完了タスクに id: 2, task: 「まどマギの映画観に行く」がある場合）→ {"action": "complete_task", "task_id": 2, "task_title": "まどマギの映画観に行く", "new_task": null, "confidence": 0.98}
-- 「映画のやつ完了！」（映画関連タスクが複数ある場合）→ {"action": "complete_task", "task_id": null, "task_title": "映画", "new_task": null, "confidence": 0.4}
-- 「ワルプルギスの廻天、観てきた」（未完了タスクに id: 2, task: 「まどマギの映画観に行く」がある場合）→ {"action": "complete_task", "task_id": 2, "task_title": "まどマギの映画観に行く", "new_task": null, "confidence": 0.90}
+- 「ゼミ制作終わった！」（未完了タスクに id: 2, task: 「ゼミ制作を進める」がある場合）→ {"action": "complete_task", "task_id": 2, "task_title": "ゼミ制作を進める", "new_task": null, "confidence": 0.98}
+- 「ゼミ制作完了！」（ゼミ制作関連タスクが複数ある場合）→ {"action": "complete_task", "task_id": null, "task_title": "ゼミ制作", "new_task": null, "confidence": 0.4}
+- 「制作終わった！」（未完了タスクに id: 2, task: 「ゼミ制作を進める」がある場合）→ {"action": "complete_task", "task_id": 2, "task_title": "ゼミ制作を進める", "new_task": null, "confidence": 0.90}
 - 「今週やること教えて」→ {"action": "list_tasks", "task_id": null, "task_title": null, "new_task": null, "confidence": 0.99}
 - 「こんにちは」→ {"action": "unknown", "task_id": null, "task_title": null, "new_task": null, "confidence": 0.9}
 

@@ -199,6 +199,27 @@ export class TaskDbClient {
     return this.getTaskById(taskId);
   }
 
+  /**
+   * ユーザー登録を残し、同期・通知で生成されたデータを初期化する。
+   * 外部キー参照を壊さないよう履歴から順に削除する。
+   */
+  async resetTaskData(): Promise<void> {
+    const db = this.getDb();
+    await db.exec('BEGIN TRANSACTION');
+    try {
+      await db.exec('DELETE FROM task_progress_history');
+      await db.exec('DELETE FROM reminder_history');
+      await db.exec('DELETE FROM tasks');
+      await db.run(
+        "DELETE FROM sqlite_sequence WHERE name IN ('tasks', 'task_progress_history', 'reminder_history')"
+      );
+      await db.exec('COMMIT');
+    } catch (error) {
+      await db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   // 進捗履歴関連
   async getTaskProgressHistory(taskId: number): Promise<TaskProgressHistory[]> {
     const db = this.getDb();
