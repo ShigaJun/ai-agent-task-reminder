@@ -1,0 +1,47 @@
+{
+  "name": "ai-agent-task-reminder",
+  "version": "1.0.0",
+  "description": "AIエージェントによるタスク管理・リマインドシステム",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "start:prod": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "job:progress-check": "node dist/index.js --job=progress-check",
+    "job:weekly-tasks": "node dist/index.js --job=weekly-tasks",
+    "sync-tasks": "ts-node scripts/sync-tasks.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [
+    "ai-agent",
+    "task-management",
+    "reminder",
+    "discord",
+    "esa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@types/node": "^26.4.0",
+    "axios": "^1.20.0",
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.4.2",
+        "node-cron": "^4.6.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^6.0.1",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/sqlite3": "^3.1.11",
+    "jest": "^30.5.0",
+    "ts-jest": "^29.4.12",
+    "typescript": "^5.6.3"
+  }
+}

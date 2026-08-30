@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ai-agent-task-reminder.weekly-tasks</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/watanabeharuto/.nvm/versions/node/v24.12.0/bin/node</string>
+    <string>/Users/watanabeharuto/Desktop/ai-agent-task-reminder/dist/index.js</string>
+    <string>--job=weekly-tasks</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/watanabeharuto/Desktop/ai-agent-task-reminder</string>
+
+  <!-- 金曜日 13:00（週報は11:30以降に書かれるため、その後に取得する） -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>5</integer>
+    <key>Hour</key>
+    <integer>13</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- 投稿後30分はボタン操作・メッセージ監視のために起動し続けてから自動終了 -->
+    <key>AUTO_SHUTDOWN_MINUTES</key>
+    <string>30</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/watanabeharuto/Desktop/ai-agent-task-reminder/logs/weekly-tasks.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/watanabeharuto/Desktop/ai-agent-task-reminder/logs/weekly-tasks.err.log</string>
+</dict>
+</plist>
