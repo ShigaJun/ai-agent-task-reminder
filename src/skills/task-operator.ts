@@ -266,10 +266,7 @@ export class TaskOperator {
     if (currentTasks.length === 0) {
       return { content: '今週のタスクはありません 👀' };
     }
-    const lines = currentTasks
-      .map((t) => `${t.status === 'completed' ? '☑' : '☐'} ${t.task_text}`)
-      .join('\n');
-    return { content: `今週のタスクです 👀\n\n${lines}` };
+    return buildChecklistMessage(currentTasks, '📋 **今週のタスク**');
   }
 
   /**
