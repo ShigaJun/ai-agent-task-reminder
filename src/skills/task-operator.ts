@@ -6,12 +6,13 @@ import { TaskOperationAnalyzer } from './task-operation-analyzer';
 import { TaskManager } from './task-manager';
 import { MarkdownParser } from '../utils/markdown-parser';
 import { filterLatestReportTasks } from '../utils/task-utils';
-import { buildChecklistMessage } from './checklist-builder';
+import { buildChecklistComponents, MAX_BUTTON_TASKS } from './checklist-builder';
 import { Task, TaskOperationIntent, User } from '../types';
 
 export interface ReplyPayload {
   content: string;
   components?: ActionRowBuilder<ButtonBuilder>[];
+  additionalMessages?: ReplyPayload[];
 }
 
 export interface WeeklyReportTarget {
@@ -266,7 +267,21 @@ export class TaskOperator {
     if (currentTasks.length === 0) {
       return { content: '今週のタスクはありません 👀' };
     }
-    return buildChecklistMessage(currentTasks, '📋 **今週のタスク**');
+    const chunks: Task[][] = [];
+    for (let i = 0; i < currentTasks.length; i += MAX_BUTTON_TASKS) {
+      chunks.push(currentTasks.slice(i, i + MAX_BUTTON_TASKS));
+    }
+    const messages = chunks.map((tasks, index): ReplyPayload => ({
+      content:
+        chunks.length === 1
+          ? '📋 **今週のタスク**'
+          : `📋 **今週のタスク（${index + 1}/${chunks.length}）**`,
+      components: buildChecklistComponents(tasks),
+    }));
+    return {
+      ...messages[0],
+      additionalMessages: messages.slice(1),
+    };
   }
 
   /**

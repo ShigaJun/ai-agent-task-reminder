@@ -12,9 +12,9 @@ export const TOGGLE_PREFIX = 'task-toggle:';
 export const CHECKLIST_HEADER = '📋 **来週やること（計画）**';
 
 /**
- * 1行に置けるボタン数（Discordの仕様: 最大5個/行）
+ * タスクボタンを縦積みにするため、1行につき1個配置する
  */
-const MAX_BUTTONS_PER_ROW = 5;
+const MAX_BUTTONS_PER_ROW = 1;
 
 /**
  * アクション行の最大数（Discordの仕様: 最大5行/メッセージ）
@@ -22,7 +22,7 @@ const MAX_BUTTONS_PER_ROW = 5;
 const MAX_ROWS = 5;
 
 /**
- * ボタンを付けられるタスク数の上限（5 × 5 = 25）
+ * ボタンを付けられるタスク数の上限（1個 × 5行 = 5）
  */
 export const MAX_BUTTON_TASKS = MAX_BUTTONS_PER_ROW * MAX_ROWS;
 
@@ -51,7 +51,7 @@ export function buildChecklistContent(tasks: Task[], header: string = CHECKLIST_
 
 /**
  * タスクをクリックで切り替えるためのボタン行を生成する
- * ※ Discordの仕様上、最大 5個×5行 = 25個まで
+ * ※ Discordの仕様上、縦積みでは最大 1個×5行 = 5個まで
  */
 export function buildChecklistComponents(tasks: Task[]): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];

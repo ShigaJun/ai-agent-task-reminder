@@ -56,18 +56,21 @@ export class ChecklistInteractionHook {
         sourceMessageId: interaction.message.id,
       });
 
-      // 同一ユーザーのタスク一覧でメッセージを再構築して編集
-      // ※ 同じ週報(esa_post_url)に紐づくタスクのみを対象にする。
+      // このメッセージに含まれるタスクだけでボタンを再構築する。
+      // 一覧が複数メッセージに分割されていても、他のページと混ざらないようにする。
       //    LLM生成文などチェックリスト以外の本文は温存し、
       //    チェックリスト本文のみ更新する
       const allTasks = await this.taskDb.getTasks(updated.user_id);
-      const tasks = updated.esa_post_url
-        ? allTasks.filter((t) => t.esa_post_url === updated.esa_post_url)
-        : allTasks;
+      const messageTaskIds = collectTaskIds(interaction.message.components);
+      const taskOrder = new Map(messageTaskIds.map((id, index) => [id, index]));
+      const tasks = allTasks
+        .filter((candidate) => taskOrder.has(candidate.id))
+        .sort((a, b) => taskOrder.get(a.id)! - taskOrder.get(b.id)!);
       const originalContent = interaction.message.content ?? '';
       // チェックリスト形式のメッセージ(📋で始まる)なら、元のヘッダー行を保ちつつ本文を更新する
       const isChecklistMessage = originalContent.startsWith('📋');
-      const content = isChecklistMessage
+      const hasTaskLines = originalContent.includes('\n');
+      const content = isChecklistMessage && hasTaskLines
         ? buildChecklistContent(tasks, originalContent.split('\n')[0])
         : originalContent;
       await interaction.editReply({
@@ -86,4 +89,26 @@ export class ChecklistInteractionHook {
       }
     }
   }
+}
+
+function collectTaskIds(value: unknown): number[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(collectTaskIds);
+  }
+  if (!value || typeof value !== 'object') {
+    return [];
+  }
+
+  const component = value as { customId?: unknown; components?: unknown };
+  const ids: number[] = [];
+  if (typeof component.customId === 'string' && component.customId.startsWith(TOGGLE_PREFIX)) {
+    const id = Number(component.customId.slice(TOGGLE_PREFIX.length));
+    if (Number.isInteger(id)) {
+      ids.push(id);
+    }
+  }
+  if (component.components !== undefined) {
+    ids.push(...collectTaskIds(component.components));
+  }
+  return ids;
 }

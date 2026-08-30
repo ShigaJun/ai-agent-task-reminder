@@ -95,6 +95,13 @@ export class MentionHandlerHook {
         reply.content,
         reply.components
       );
+      for (const additional of reply.additionalMessages ?? []) {
+        await this.discordClient.sendToTimesChannelByName(
+          user.discord_times_channel_name,
+          additional.content,
+          additional.components
+        );
+      }
     } catch (error) {
       console.error('[mention] Failed to handle mention:', error);
     }
