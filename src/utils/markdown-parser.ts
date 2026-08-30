@@ -134,4 +134,28 @@ export class MarkdownParser {
     // 該当行のチェックボックスだけ [ ] → [x] に置換する
     return markdown.replace(lineRegex, (line) => line.replace(/\[([ xX])\]/, '[x]'));
   }
+
+  /**
+   * 「来週やること」内の指定タスクのチェックボックス行を削除する。
+   * 同名行が他セクションにあっても削除しない。
+   */
+  static removeTaskCheckbox(markdown: string, taskText: string): string | null {
+    const sectionRegex = /(#+\s*来週やること.*?\n)([\s\S]*?)(?=\n#+\s|\n\n#+\s|$)/i;
+    const sectionMatch = markdown.match(sectionRegex);
+    if (!sectionMatch) {
+      return null;
+    }
+
+    const escaped = taskText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const taskLineRegex = new RegExp(
+      `^[ \\t]*[-*][ \\t]*\\[([ xX])\\][ \\t]*${escaped}[ \\t]*(?:\\n|$)`,
+      'm'
+    );
+    if (!taskLineRegex.test(sectionMatch[2])) {
+      return null;
+    }
+
+    const updatedContent = sectionMatch[2].replace(taskLineRegex, '');
+    return markdown.replace(sectionMatch[0], `${sectionMatch[1]}${updatedContent}`);
+  }
 }

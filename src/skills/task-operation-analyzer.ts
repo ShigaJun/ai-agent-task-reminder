@@ -3,7 +3,7 @@ import path from 'path';
 import { LlmClient } from '../mcp/llm-client';
 import { Task, TaskOperationIntent } from '../types';
 
-const VALID_ACTIONS = ['add_task', 'complete_task', 'list_tasks', 'unknown'];
+const VALID_ACTIONS = ['add_task', 'complete_task', 'delete_task', 'list_tasks', 'unknown'];
 
 /**
  * タスク操作意図の解析スキル

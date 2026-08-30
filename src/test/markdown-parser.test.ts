@@ -53,3 +53,25 @@ describe('MarkdownParser', () => {
     });
   });
 });
+
+describe('MarkdownParser.removeTaskCheckbox', () => {
+  test('来週やることから指定した行だけを削除する', () => {
+    const markdown = [
+      '## 来週やること',
+      '- [ ] ゼミ制作',
+      '- [x] 資料提出',
+      '',
+      '## 今週やったこと',
+      '- [ ] ゼミ制作',
+    ].join('\n');
+
+    const result = MarkdownParser.removeTaskCheckbox(markdown, 'ゼミ制作');
+    expect(result).not.toContain('## 来週やること\n- [ ] ゼミ制作');
+    expect(result).toContain('- [x] 資料提出');
+    expect(result).toContain('## 今週やったこと\n- [ ] ゼミ制作');
+  });
+
+  test('対象行がなければnullを返す', () => {
+    expect(MarkdownParser.removeTaskCheckbox('## 来週やること\n- [ ] 資料提出', 'ゼミ制作')).toBeNull();
+  });
+});

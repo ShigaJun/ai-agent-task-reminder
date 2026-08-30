@@ -89,10 +89,10 @@ export interface EsaPost {
  * LLMによるタスク操作意図の解析結果
  */
 export interface TaskOperationIntent {
-  action: 'add_task' | 'complete_task' | 'list_tasks' | 'unknown';
-  /** complete_task: 現在のタスク一覧から一意に特定できた場合のタスクID */
+  action: 'add_task' | 'complete_task' | 'delete_task' | 'list_tasks' | 'unknown';
+  /** complete_task/delete_task: 現在のタスク一覧から一意に特定できた場合のタスクID */
   task_id: number | null;
-  /** complete_task: 対象タスクの推定タイトル（表示・曖昧確認用） */
+  /** complete_task/delete_task: 対象タスクの推定タイトル（表示・曖昧確認用） */
   task_title: string | null;
   /** add_task: 追加するタスク名 */
   new_task: string | null;

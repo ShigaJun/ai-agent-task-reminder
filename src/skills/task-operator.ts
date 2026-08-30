@@ -24,6 +24,7 @@ const UNKNOWN_REPLY = [
   'タスクの操作を手伝います 👀',
   '- 追加: 「ゼミ制作 追加して」',
   '- 完了: 「ゼミ制作終わった」',
+  '- 削除: 「ゼミ制作を削除して」',
   '- 一覧: 「今週やること教えて」',
 ].join('\n');
 
@@ -90,6 +91,8 @@ export class TaskOperator {
         return this.addTask(user, intent, reportTarget);
       case 'complete_task':
         return this.completeTask(intent, currentTasks);
+      case 'delete_task':
+        return this.deleteTask(intent, currentTasks);
       case 'list_tasks':
         return this.listTasks(currentTasks);
       default:
@@ -209,6 +212,54 @@ export class TaskOperator {
   }
 
   /**
+   * esaの「来週やること」から行を削除し、成功後にDBからも削除する
+   */
+  private async deleteTask(
+    intent: TaskOperationIntent,
+    currentTasks: Task[]
+  ): Promise<ReplyPayload> {
+    let target: Task | undefined;
+    if (intent.task_id != null) {
+      target = currentTasks.find((t) => t.id === intent.task_id);
+    } else if (intent.task_title) {
+      const title = intent.task_title.trim();
+      const candidates = currentTasks.filter(
+        (t) => t.task_text.includes(title) || title.includes(t.task_text)
+      );
+      if (candidates.length === 1) {
+        target = candidates[0];
+      } else if (candidates.length > 1) {
+        return ambiguousDeleteReply(candidates);
+      }
+    }
+
+    if (!target) {
+      return currentTasks.length > 0
+        ? ambiguousDeleteReply(currentTasks)
+        : { content: '削除できるタスクはありません 👀' };
+    }
+    if (!target.esa_post_url) {
+      return { content: `「${target.task_text}」に対応するesa記事がないため、削除していません 🙏` };
+    }
+
+    const postNumber = Number(target.esa_post_url.split('/').pop());
+    const post = await this.esaClient.getPost(postNumber);
+    if (!post) {
+      return { content: `「${target.task_text}」に対応するesa記事が見つからないため、削除していません 🙏` };
+    }
+
+    const newBody = MarkdownParser.removeTaskCheckbox(post.bodyMarkdown, target.task_text);
+    if (newBody === null) {
+      return { content: `esa記事の「来週やること」に「${target.task_text}」が見つからないため、削除していません 🙏` };
+    }
+
+    // esaの更新に成功した場合だけDBを削除し、両者の不整合を避ける
+    await this.esaClient.updatePostBody(postNumber, newBody);
+    await this.taskDb.deleteTask(target.id);
+    return { content: `「${target.task_text}」を来週やることから削除しました 🗑️` };
+  }
+
+  /**
    * タスク一覧の返信
    */
   private listTasks(currentTasks: Task[]): ReplyPayload {
@@ -241,6 +292,16 @@ export class TaskOperator {
         return ambiguousReply(candidates);
       }
     }
+    if (intent.action === 'delete_task' && intent.task_title) {
+      const candidates = currentTasks.filter(
+        (t) =>
+          t.task_text.includes(intent.task_title!) ||
+          intent.task_title!.includes(t.task_text)
+      );
+      if (candidates.length > 0) {
+        return ambiguousDeleteReply(candidates);
+      }
+    }
     return {
       content:
         '意図を確定できなかったため、タスクは更新していません。\n「追加して」「終わった」「教えて」のように教えてもらえますか？ 🙏',
@@ -255,5 +316,12 @@ function ambiguousReply(candidates: Task[]): ReplyPayload {
   const lines = candidates.map((t, i) => `${i + 1}. ${t.task_text}`).join('\n');
   return {
     content: `どのタスクを完了にしますか？\n\n${lines}`,
+  };
+}
+
+function ambiguousDeleteReply(candidates: Task[]): ReplyPayload {
+  const lines = candidates.map((t, i) => `${i + 1}. ${t.task_text}`).join('\n');
+  return {
+    content: `どのタスクを削除しますか？\n\n${lines}`,
   };
 }
