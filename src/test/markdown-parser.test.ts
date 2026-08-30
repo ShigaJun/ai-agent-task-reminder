@@ -75,3 +75,25 @@ describe('MarkdownParser.removeTaskCheckbox', () => {
     expect(MarkdownParser.removeTaskCheckbox('## 来週やること\n- [ ] 資料提出', 'ゼミ制作')).toBeNull();
   });
 });
+
+describe('MarkdownParser.setTaskCheckboxStatus', () => {
+  const markdown = [
+    '## 来週やること',
+    '- [ ] ゼミ制作',
+    '',
+    '## 今週やったこと',
+    '- [ ] ゼミ制作',
+  ].join('\n');
+
+  test('来週やることのタスクを完了にする', () => {
+    const result = MarkdownParser.setTaskCheckboxStatus(markdown, 'ゼミ制作', true);
+    expect(result).toContain('## 来週やること\n- [x] ゼミ制作');
+    expect(result).toContain('## 今週やったこと\n- [ ] ゼミ制作');
+  });
+
+  test('完了したタスクを未完了に戻す', () => {
+    const completed = MarkdownParser.setTaskCheckboxStatus(markdown, 'ゼミ制作', true)!;
+    const result = MarkdownParser.setTaskCheckboxStatus(completed, 'ゼミ制作', false);
+    expect(result).toContain('## 来週やること\n- [ ] ゼミ制作');
+  });
+});

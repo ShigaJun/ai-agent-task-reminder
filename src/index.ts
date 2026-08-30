@@ -53,6 +53,7 @@ class AiAgentTaskReminder {
     this.checklistInteractionHook = new ChecklistInteractionHook(
       this.discordClient,
       this.taskDb,
+      this.esaClient,
     );
     this.mentionHandlerHook = new MentionHandlerHook(
       this.discordClient,

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { TaskDbClient } from '../src/mcp/task-db';
+import { EsaClient } from '../src/mcp/esa-client';
 import { ChecklistInteractionHook } from '../src/hooks/checklist-interaction';
 import { buildChecklistContent } from '../src/skills/checklist-builder';
 
@@ -11,7 +12,7 @@ import { buildChecklistContent } from '../src/skills/checklist-builder';
 async function main(): Promise<void> {
   const taskDb = new TaskDbClient();
   await taskDb.initialize();
-  const hook = new ChecklistInteractionHook({} as any, taskDb);
+  const hook = new ChecklistInteractionHook({} as any, taskDb, new EsaClient());
 
   const taskId = Number(process.argv[2] || '18');
   const before = await taskDb.getTaskById(taskId);

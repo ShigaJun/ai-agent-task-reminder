@@ -1,6 +1,8 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { DiscordClient } from '../mcp/discord-client';
 import { TaskDbClient } from '../mcp/task-db';
+import { EsaClient } from '../mcp/esa-client';
+import { MarkdownParser } from '../utils/markdown-parser';
 import {
   buildChecklistComponents,
   buildChecklistContent,
@@ -15,10 +17,12 @@ import {
 export class ChecklistInteractionHook {
   private discordClient: DiscordClient;
   private taskDb: TaskDbClient;
+  private esaClient: EsaClient;
 
-  constructor(discordClient: DiscordClient, taskDb: TaskDbClient) {
+  constructor(discordClient: DiscordClient, taskDb: TaskDbClient, esaClient: EsaClient) {
     this.discordClient = discordClient;
     this.taskDb = taskDb;
+    this.esaClient = esaClient;
   }
 
   /**
@@ -51,6 +55,29 @@ export class ChecklistInteractionHook {
       // タスクを取得して状態をトグル（未完了⇄完了）
       const task = await this.taskDb.getTaskById(taskId);
       const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+
+      if (!task.esa_post_url) {
+        throw new Error(`Task ${taskId} has no esa post URL.`);
+      }
+      const postNumber = Number(task.esa_post_url.split('/').pop());
+      if (!Number.isInteger(postNumber) || postNumber <= 0) {
+        throw new Error(`Task ${taskId} has an invalid esa post URL.`);
+      }
+      const post = await this.esaClient.getPost(postNumber);
+      if (!post) {
+        throw new Error(`esa post ${postNumber} was not found.`);
+      }
+      const newBody = MarkdownParser.setTaskCheckboxStatus(
+        post.bodyMarkdown,
+        task.task_text,
+        newStatus === 'completed'
+      );
+      if (newBody === null) {
+        throw new Error(`Task checkbox was not found in esa post ${postNumber}.`);
+      }
+
+      // esaを先に更新し、成功した場合だけDBへ反映する
+      await this.esaClient.updatePostBody(postNumber, newBody);
       const updated = await this.taskDb.updateTaskStatus(taskId, newStatus, {
         reason: 'チェックリストのボタンで手動切り替え',
         sourceMessageId: interaction.message.id,
@@ -61,7 +88,8 @@ export class ChecklistInteractionHook {
       //    LLM生成文などチェックリスト以外の本文は温存し、
       //    チェックリスト本文のみ更新する
       const allTasks = await this.taskDb.getTasks(updated.user_id);
-      const messageTaskIds = collectTaskIds(interaction.message.components);
+      const extractedTaskIds = collectTaskIds(interaction.message.components);
+      const messageTaskIds = extractedTaskIds.length > 0 ? extractedTaskIds : [taskId];
       const taskOrder = new Map(messageTaskIds.map((id, index) => [id, index]));
       const tasks = allTasks
         .filter((candidate) => taskOrder.has(candidate.id))
@@ -85,6 +113,13 @@ export class ChecklistInteractionHook {
       if (!interaction.deferred && !interaction.replied) {
         await interaction
           .reply({ content: 'タスクの更新に失敗しました。', flags: MessageFlags.Ephemeral })
+          .catch(() => {});
+      } else {
+        await interaction
+          .followUp({
+            content: 'esaへの反映に失敗したため、タスクの状態は変更していません。',
+            flags: MessageFlags.Ephemeral,
+          })
           .catch(() => {});
       }
     }

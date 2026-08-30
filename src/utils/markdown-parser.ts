@@ -118,21 +118,37 @@ export class MarkdownParser {
    * @returns 更新後の本文。該当行が見つからない場合はnull
    */
   static completeTaskCheckbox(markdown: string, taskText: string): string | null {
-    // 正規表現の特殊文字をエスケープ
+    return this.setTaskCheckboxStatus(markdown, taskText, true);
+  }
+
+  /**
+   * 「来週やること」内の指定タスクを完了・未完了へ切り替える。
+   */
+  static setTaskCheckboxStatus(
+    markdown: string,
+    taskText: string,
+    completed: boolean
+  ): string | null {
+    const sectionRegex = /(#+\s*来週やること.*?\n)([\s\S]*?)(?=\n#+\s|\n\n#+\s|$)/i;
+    const sectionMatch = markdown.match(sectionRegex);
+    if (!sectionMatch) {
+      return null;
+    }
+
     const escaped = taskText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const lineRegex = new RegExp(
+    const taskLineRegex = new RegExp(
       `^[ \\t]*[-*][ \\t]*\\[([ xX])\\][ \\t]*${escaped}[ \\t]*$`,
       'm'
     );
-    const match = markdown.match(lineRegex);
-    if (!match) {
+    if (!taskLineRegex.test(sectionMatch[2])) {
       return null;
     }
-    if (match[1].toLowerCase() === 'x') {
-      return markdown; // 既に完了済みなら何もしない
-    }
-    // 該当行のチェックボックスだけ [ ] → [x] に置換する
-    return markdown.replace(lineRegex, (line) => line.replace(/\[([ xX])\]/, '[x]'));
+
+    const mark = completed ? 'x' : ' ';
+    const updatedContent = sectionMatch[2].replace(taskLineRegex, (line) =>
+      line.replace(/\[([ xX])\]/, `[${mark}]`)
+    );
+    return markdown.replace(sectionMatch[0], `${sectionMatch[1]}${updatedContent}`);
   }
 
   /**
