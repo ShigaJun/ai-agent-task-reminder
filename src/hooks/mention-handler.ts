@@ -4,6 +4,7 @@ import { TaskDbClient } from '../mcp/task-db';
 import { DiscordMessage } from '../types';
 import { SchedulerHook } from './scheduler';
 import { TaskOperator } from '../skills/task-operator';
+import { getJapaneseYearAndWeek } from '../utils/japanese-week';
 
 /**
  * メンションハンドラフック
@@ -56,11 +57,20 @@ export class MentionHandlerHook {
         `[mention] ${message.channelName ?? message.channelId}: "${message.content.slice(0, 50)}"`
       );
 
-      // timesチャンネル内ならそのチャンネルのユーザーに対して処理する
-      const user =
-        message.channelName && message.channelName.startsWith(config.discord.timesChannelPrefix)
-          ? await this.taskDb.getUserByChannelName(message.channelName)
-          : null;
+      if (
+        !message.channelName ||
+        !message.channelName.startsWith(config.discord.timesChannelPrefix)
+      ) {
+        await this.discordClient.sendMessage(
+          message.channelId,
+          'timesチャンネル（#times-〇〇）の中でメンションしてください 🙏'
+        );
+        return;
+      }
+
+      // times-〇〇 の〇〇をesa週報のユーザー名として扱う
+      const channelName = message.channelName;
+      const user = await this.taskDb.getUserByChannelName(channelName);
 
       if (!user) {
         await this.discordClient.sendMessage(
@@ -72,9 +82,14 @@ export class MentionHandlerHook {
 
       // メンション部分を除いた本文を取得
       const text = this.discordClient.stripMention(message.content);
+      const reportWeek = getJapaneseYearAndWeek(message.timestamp);
+      const esaUserName = channelName.slice(config.discord.timesChannelPrefix.length);
 
       // 自然言語でのタスク操作（LLMで意図を解析して実行）
-      const reply = await this.taskOperator.handleCommand(user, text);
+      const reply = await this.taskOperator.handleCommand(user, text, {
+        ...reportWeek,
+        userName: esaUserName,
+      });
       await this.discordClient.sendToTimesChannelByName(
         user.discord_times_channel_name,
         reply.content,

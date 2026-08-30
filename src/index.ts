@@ -4,9 +4,7 @@ import { EsaClient } from "./mcp/esa-client";
 import { DiscordClient } from "./mcp/discord-client";
 import { LlmClient } from "./mcp/llm-client";
 import { TaskManager } from "./skills/task-manager";
-import { ProgressAnalyzer } from "./skills/progress-analyzer";
 import { SchedulerHook } from "./hooks/scheduler";
-import { DiscordListenerHook } from "./hooks/discord-listener";
 import { ChecklistInteractionHook } from "./hooks/checklist-interaction";
 import { MentionHandlerHook } from "./hooks/mention-handler";
 import { TaskOperationAnalyzer } from "./skills/task-operation-analyzer";
@@ -23,9 +21,7 @@ class AiAgentTaskReminder {
   private discordClient: DiscordClient;
   private llmClient: LlmClient;
   private taskManager: TaskManager;
-  private progressAnalyzer: ProgressAnalyzer;
   private schedulerHook: SchedulerHook;
-  private discordListenerHook: DiscordListenerHook;
   private checklistInteractionHook: ChecklistInteractionHook;
   private mentionHandlerHook: MentionHandlerHook;
   private taskOperationAnalyzer: TaskOperationAnalyzer;
@@ -40,24 +36,18 @@ class AiAgentTaskReminder {
 
     // Skills (AI判断ロジック)
     this.taskManager = new TaskManager(this.taskDb, this.esaClient);
-    this.progressAnalyzer = new ProgressAnalyzer(this.llmClient);
     this.taskOperationAnalyzer = new TaskOperationAnalyzer(this.llmClient);
     this.taskOperator = new TaskOperator(
       this.taskDb,
       this.esaClient,
       this.taskOperationAnalyzer,
+      this.taskManager,
     );
 
     // Hooks (イベント・スケジューラ)
     this.schedulerHook = new SchedulerHook(
       this.taskDb,
       this.discordClient,
-      this.taskManager,
-    );
-    this.discordListenerHook = new DiscordListenerHook(
-      this.discordClient,
-      this.taskDb,
-      this.progressAnalyzer,
       this.taskManager,
     );
     this.checklistInteractionHook = new ChecklistInteractionHook(
@@ -120,9 +110,6 @@ class AiAgentTaskReminder {
       } else {
         this.schedulerHook.start();
       }
-
-      // Discordリスナー開始
-      this.discordListenerHook.start();
 
       // チェックリストボタンのクリック処理を開始
       this.checklistInteractionHook.start();

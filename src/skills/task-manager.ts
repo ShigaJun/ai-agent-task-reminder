@@ -21,14 +21,18 @@ export class TaskManager {
    * @param userId ユーザーID
    * @returns 保存されたタスク配列
    */
-  async fetchAndSaveWeeklyTasks(userId: number): Promise<Task[]> {
+  async fetchAndSaveWeeklyTasks(
+    userId: number,
+    year?: string,
+    weekNumber?: number
+  ): Promise<Task[]> {
     const user = await this.taskDb.getUserById(userId);
 
     // timesチャンネル名の末尾からesaユーザー名を導出（例: times-wata_haru -> wata_haru）
     const esaUserName = user.discord_times_channel_name.replace(/^times-/, '');
 
     // 1. esaからユーザーの週報を取得
-    const weeklyReport = await this.esaClient.getWeeklyReport(undefined, undefined, esaUserName);
+    const weeklyReport = await this.esaClient.getWeeklyReport(year, weekNumber, esaUserName);
 
     if (!weeklyReport) {
       console.log(`No weekly report found in esa for user ${esaUserName}.`);

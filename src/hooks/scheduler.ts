@@ -48,8 +48,7 @@ export class SchedulerHook {
 
   /**
    * 金曜日9:00: 今週分のタスクの達成度チェック
-   * DBに保存済みの「最新週報分」タスクの状態を、ボタン付きチェックリストで通知する
-   * ※ 週報は金曜11:30以降に書かれるため、9:00時点ではesaを再取得せずDBの値を使う
+   * esaの最新週報をDBへ同期してから、ボタン付きチェックリストで通知する
    */
   async handleProgressCheck(): Promise<void> {
     try {
@@ -75,6 +74,7 @@ export class SchedulerHook {
    */
   async sendProgressCheck(user: User): Promise<void> {
     try {
+      await this.taskManager.fetchAndSaveWeeklyTasks(user.id);
       const allTasks = await this.taskDb.getTasks(user.id);
       const tasks = filterLatestReportTasks(allTasks);
 

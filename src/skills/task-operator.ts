@@ -3,6 +3,7 @@ import { config } from '../config';
 import { TaskDbClient } from '../mcp/task-db';
 import { EsaClient } from '../mcp/esa-client';
 import { TaskOperationAnalyzer } from './task-operation-analyzer';
+import { TaskManager } from './task-manager';
 import { MarkdownParser } from '../utils/markdown-parser';
 import { filterLatestReportTasks } from '../utils/task-utils';
 import { buildChecklistMessage } from './checklist-builder';
@@ -11,6 +12,12 @@ import { Task, TaskOperationIntent, User } from '../types';
 export interface ReplyPayload {
   content: string;
   components?: ActionRowBuilder<ButtonBuilder>[];
+}
+
+export interface WeeklyReportTarget {
+  year: string;
+  weekNumber: number;
+  userName: string;
 }
 
 const UNKNOWN_REPLY = [
@@ -29,11 +36,18 @@ export class TaskOperator {
   private taskDb: TaskDbClient;
   private esaClient: EsaClient;
   private analyzer: TaskOperationAnalyzer;
+  private taskManager: TaskManager;
 
-  constructor(taskDb: TaskDbClient, esaClient: EsaClient, analyzer: TaskOperationAnalyzer) {
+  constructor(
+    taskDb: TaskDbClient,
+    esaClient: EsaClient,
+    analyzer: TaskOperationAnalyzer,
+    taskManager: TaskManager
+  ) {
     this.taskDb = taskDb;
     this.esaClient = esaClient;
     this.analyzer = analyzer;
+    this.taskManager = taskManager;
   }
 
   /**
@@ -42,7 +56,17 @@ export class TaskOperator {
    * @param user 対象ユーザー（メンションされたtimesチャンネルの持ち主）
    * @param text メンション部分を除去したユーザーメッセージ
    */
-  async handleCommand(user: User, text: string): Promise<ReplyPayload> {
+  async handleCommand(
+    user: User,
+    text: string,
+    reportTarget: WeeklyReportTarget
+  ): Promise<ReplyPayload> {
+    // @リマインダーbotで呼び出された時点のesa内容をDBへ反映してから操作する
+    await this.taskManager.fetchAndSaveWeeklyTasks(
+      user.id,
+      reportTarget.year,
+      reportTarget.weekNumber
+    );
     const allTasks = await this.taskDb.getTasks(user.id);
     const currentTasks = filterLatestReportTasks(allTasks);
 
@@ -63,7 +87,7 @@ export class TaskOperator {
     // 4. actionに応じた処理
     switch (intent.action) {
       case 'add_task':
-        return this.addTask(user, intent);
+        return this.addTask(user, intent, reportTarget);
       case 'complete_task':
         return this.completeTask(intent, currentTasks);
       case 'list_tasks':
@@ -76,7 +100,11 @@ export class TaskOperator {
   /**
    * タスク追加: esa記事の「来週やること」に追記し、DBにも追加する
    */
-  private async addTask(user: User, intent: TaskOperationIntent): Promise<ReplyPayload> {
+  private async addTask(
+    user: User,
+    intent: TaskOperationIntent,
+    reportTarget: WeeklyReportTarget
+  ): Promise<ReplyPayload> {
     const taskText = intent.new_task?.trim();
     if (!taskText) {
       return {
@@ -85,22 +113,19 @@ export class TaskOperator {
       };
     }
 
-    const esaUserName = user.discord_times_channel_name.replace(/^times-/, '');
-
-    // 1. esaの最新週報を取得して「来週やること」に追記する
+    // 1. メンション時刻に対応するesa週報を取得して「来週やること」に追記する
     //    （esaを先に更新。esaの追記に失敗した場合はDBを触らずエラーを返す）
-    const report = await this.esaClient.getWeeklyReport(undefined, undefined, esaUserName);
+    const report = await this.esaClient.getWeeklyReport(
+      reportTarget.year,
+      reportTarget.weekNumber,
+      reportTarget.userName
+    );
 
     if (!report) {
-      // 週報が無い場合はDBにのみ追加する
-      await this.taskDb.createTask({
-        userId: user.id,
-        taskText,
-        status: 'todo',
-        esaPostUrl: undefined,
-      });
       return {
-        content: `週報が見つからなかったため、DBにのみ追加しました:\n「${taskText}」\n※esaに週報を作成すると次回の同期から反映されます`,
+        content:
+          `esa記事「週報/${reportTarget.year}/${reportTarget.weekNumber}/` +
+          `${reportTarget.userName}」が見つからないため、追加していません 🙏`,
       };
     }
 

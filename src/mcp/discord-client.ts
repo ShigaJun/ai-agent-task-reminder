@@ -3,11 +3,6 @@ import { config } from '../config';
 import { DiscordMessage } from '../types';
 
 /**
- * 実メンション以外に、名前での指定（@リマインダーbot）もトリガーとして扱う
- */
-const MENTION_ALIASES = ['@リマインダーbot'];
-
-/**
  * Discord APIクライアント
  * Botを通じてDiscordと連携する
  */
@@ -228,25 +223,17 @@ export class DiscordClient {
   /**
    * メッセージがBotへのメンションか判定する
    * - 実メンション: <@BOT_ID> / <@!BOT_ID>
-   * - 名前指定: @リマインダーbot というテキスト
    */
   isMentioningMe(content: string): boolean {
     const id = this.client.user?.id;
-    if (id && (content.includes(`<@${id}>`) || content.includes(`<@!${id}>`))) {
-      return true;
-    }
-    return MENTION_ALIASES.some((alias) => content.includes(alias));
+    return Boolean(id && (content.includes(`<@${id}>`) || content.includes(`<@!${id}>`)));
   }
 
   /**
-   * メンション部分（実メンション・名前エイリアス）を本文から取り除く
+   * Botの実メンション部分を本文から取り除く
    */
   stripMention(content: string): string {
-    let result = content.replace(/<@!?\d+>/g, ' ');
-    for (const alias of MENTION_ALIASES) {
-      result = result.split(alias).join(' ');
-    }
-    return result.trim();
+    return content.replace(/<@!?\d+>/g, ' ').trim();
   }
 
   /**

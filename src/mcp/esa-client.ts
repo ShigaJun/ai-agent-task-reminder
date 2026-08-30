@@ -213,6 +213,8 @@ export class EsaClient {
       await this.client.patch(`/teams/${this.teamName}/posts/${postNumber}`, {
         body_md: bodyMd,
       });
+      // 更新前の本文を次回取得で返さないようにする
+      this.weeklyPostsCache = null;
     } catch (error) {
       console.error('esa API error:', error);
       throw new Error(`Failed to update esa post: ${error}`);
